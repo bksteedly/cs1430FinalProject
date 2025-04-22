@@ -5,10 +5,13 @@ import os
 from tqdm import tqdm
 
 
-file_name = glob.glob('../data/extracredit/multiple_aruco.jpg') 
-image = cv2.imread(str(file_name[0]))
+# file_name = glob.glob('../data/extracredit/multiple_aruco.jpg') 
+file_name0 = glob.glob('../data/extracredit/IMG_3385.jpg') 
+file_name1 = glob.glob('../data/extracredit/IMG_3386.jpg') 
+image0 = cv2.imread(str(file_name0[0]))
+image1 = cv2.imread(str(file_name1[0]))
 # using two of the same image
-img_list = [image, image]
+img_list = [image0, image1]
 aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_1000)
 markerLength = 3.75 # in cm
 # space between markers in the image
