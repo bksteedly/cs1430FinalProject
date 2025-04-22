@@ -26,7 +26,6 @@ def calculate_projection_matrix(image, markers):
     # Markers is a dictionary mapping a marker ID to a 4x3 array
     # containing the 3d points for each of the 4 corners of the
     # marker in our scanning setup
-    print(markers)
     dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_1000)
     parameters = cv2.aruco.DetectorParameters_create()
 
