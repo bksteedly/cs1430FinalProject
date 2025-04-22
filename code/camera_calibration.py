@@ -42,29 +42,30 @@ def camera_calibration():
     print("Camera matrix is \n", mtx, "\n And is stored in calibration.yaml file along with distortion coefficients : \n", dist)
     # data = {'camera_matrix': np.asarray(mtx).tolist(), 'dist_coeff': np.asarray(dist).tolist()}
         
-    return mtx, dist, board
+    return mtx, dist, board, aruco_dict, arucoParams
 
 def compute_projection_matrix():
-    camera_matrix, dist_coeffs, board = camera_calibration()
+    camera_matrix, dist_coeffs, board, aruco_dict, arucoParams = camera_calibration()
     
-    file_name = glob.glob('../data/extracredit/objection_detection/IMG_3385.jpg') 
+    file_name = glob.glob('../data/extracredit/IMG_3385.jpg') 
     image = cv2.imread(str(file_name[0]))
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # Detect markers as before
-    corners, ids, _ = cv2.detector.detectMarkers(gray)
+    corners, ids, _ = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=arucoParams)
 
     # Estimate pose
-    retval, rvec, tvec = cv2.aruco.estimatePoseBoard(corners, ids, board, camera_matrix, dist_coeffs)
+    retval, rvec, tvec = cv2.aruco.estimatePoseBoard(corners, ids, board, camera_matrix, dist_coeffs, None, None)
 
     R, _ = cv2.Rodrigues(rvec)
     extrinsic = np.hstack((R, tvec))
     projection_matrix = camera_matrix @ extrinsic
 
     print(f"projection_matrix: {projection_matrix}")
+    return projection_matrix
 
 
 if __name__ == '__main__':
-    camera_calibration()
+    compute_projection_matrix()
 
 # Checkerboard option: 
 

@@ -2,6 +2,8 @@ import argparse
 import os
 from skimage import io
 import numpy as np
+import glob
+import cv2
 
 from helpers import show_reprojections, get_matches, show_point_cloud, \
     get_markers, show_matches
@@ -54,9 +56,15 @@ def main():
     image_files = os.listdir(data_dir)
 
     print(f'Loading {len(image_files)} images for {args.sequence} sequence...')
-    images = []
-    for image_file in image_files:
-        images.append(io.imread(os.path.join(data_dir, image_file)))
+    # images = []
+    # for image_file in image_files:
+    #     images.append(io.imread(os.path.join(data_dir, image_file)))
+
+    file_name0 = glob.glob('../data/extracredit/IMG_3385.jpg') 
+    file_name1 = glob.glob('../data/extracredit/IMG_3386.jpg') 
+    image0 = cv2.imread(str(file_name0[0]))
+    image1 = cv2.imread(str(file_name1[0]))
+    images = [image0, image1]
 
     markers = get_markers(os.path.join(args.data, "markers.txt"))
 
@@ -66,8 +74,8 @@ def main():
         M, residual = student.calculate_projection_matrix(image, markers)
         Ms.append(M)
 
-    if not args.no_intermediate_vis:
-        show_reprojections(images, Ms, markers)
+    # if not args.no_intermediate_vis:
+    #     show_reprojections(images, Ms, markers)
 
     points3d = []
     points3d_color = []
