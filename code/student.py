@@ -26,30 +26,32 @@ def calculate_projection_matrix(image, markers):
     # Markers is a dictionary mapping a marker ID to a 4x3 array
     # containing the 3d points for each of the 4 corners of the
     # marker in our scanning setup
-    # dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_1000)
-    # parameters = cv2.aruco.DetectorParameters_create()
+    print(markers)
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_1000)
+    parameters = cv2.aruco.DetectorParameters_create()
 
-    # markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(
-    #     image, dictionary, parameters=parameters)
-    # markerIds = [m[0] for m in markerIds]
-    # markerCorners = [m[0] for m in markerCorners]
+    markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(
+        image, dictionary, parameters=parameters)
+    markerIds = [m[0] for m in markerIds]
+    markerCorners = [m[0] for m in markerCorners]
 
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    print(gray)
-    pattern_size = (3, 3)
-    print(pattern_size)
+    # image = cv2.imread("/Users/amulya/Documents/Brown/spring_2025/csci1430/cs1430FinalProject/data/extracredit/Checkerboard_pattern.jpg")
+    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # print(gray)
+    # pattern_size = (4,4)
+    # print(pattern_size)
 
-    ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
-    print(ret)
-    print(corners)
+    # ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
+    # print(ret)
+    # print(corners)
 
-    if ret:
-        cv2.drawChessboardCorners(image, pattern_size, corners, ret)
-        cv2.imshow('Chessboard Corners', image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-    else:
-        print("Chessboard pattern not found.")
+    # if ret:
+    #     cv2.drawChessboardCorners(image, pattern_size, corners, ret)
+    #     cv2.imshow('Chessboard Corners', image)
+    #     cv2.waitKey(0)
+    #     cv2.destroyAllWindows()
+    # else:
+    #     print("Chessboard pattern not found.")
 
     points2d = []
     points3d = []
