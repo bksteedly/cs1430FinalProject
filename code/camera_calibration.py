@@ -2,55 +2,47 @@ import cv2
 import numpy as np
 import glob
 import os
+from tqdm import tqdm
 
 
 file_name = glob.glob('../data/extracredit/multiple_aruco.jpg') 
-images = cv2.imread(str(file_name[0]))
-aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_1000)
-markerLength = 10 # in cm
+image = cv2.imread(str(file_name[0]))
+# using two of the same image
+img_list = [image, image]
+aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_1000)
+markerLength = 3.75 # in cm
+# space between markers in the image
 markerSeparation = 0.5 
 board = cv2.aruco.GridBoard_create(4, 5, markerLength, markerSeparation, aruco_dict)
-img = board.draw((864,1080))
-cv2.imshow("aruco", img)
 
 arucoParams = cv2.aruco.DetectorParameters_create()
 counter, corners_list, id_list = [], [], []
-first = True
-img_gray = cv2.cvtColor(images ,cv2.COLOR_RGB2GRAY)
-corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(img_gray, aruco_dict, parameters=arucoParams)
-if first == True:
-    corners_list = corners
-    id_list = ids
-    counter = [1]
-    first = False
-else:
-    corners_list = np.vstack((corners_list, corners))
-    id_list = np.vstack((id_list,ids))
-    counter.append(len(ids))
-
-# markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(
-#         images, aruco_dict, parameters=arucoParams)
-# # markerIds = [m[0] for m in markerIds]
-# # markerCorners = [m[0] for m in markerCorners]
-# corners_list = markerCorners
-# id_list = markerIds
-# counter = [1]
+first = True # set to true if it's the first image
+for im in tqdm(img_list):
+    img_gray = cv2.cvtColor(im ,cv2.COLOR_RGB2GRAY)
+    corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(img_gray, aruco_dict, parameters=arucoParams)
+    if first == True:
+        corners_list = corners
+        id_list = ids
+        first = False
+    else:
+        corners_list = np.vstack((corners_list, corners))
+        id_list = np.vstack((id_list,ids))
+        # a list of the number of aruco markers in each image
+        counter.append(len(ids))
 
 
 counter = np.array(counter)
 print ("Calibrating camera .... Please wait...")
 
-print(corners_list)
-print(id_list)
-print(counter)
-print(board)
-print(img_gray.shape)
 ret, mtx, dist, rvecs, tvecs = cv2.aruco.calibrateCameraAruco(corners_list, id_list, counter, board, img_gray.shape, None, None )
 
 print("Camera matrix is \n", mtx, "\n And is stored in calibration.yaml file along with distortion coefficients : \n", dist)
 data = {'camera_matrix': np.asarray(mtx).tolist(), 'dist_coeff': np.asarray(dist).tolist()}
     
 cv2.destroyAllWindows()
+
+# Checkerboard option: 
 
 # # Set checkerboard size
 # CHECKERBOARD = (4, 4) # This is the number of inner corners -> (num cols - 1, num rows - 1) -> needs to be min 3x3 checkerboard with (2,2) corners
