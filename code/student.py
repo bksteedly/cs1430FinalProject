@@ -3,7 +3,7 @@ import cv2
 import random
 import matplotlib.pyplot as plt
 
-from camera_calibration import camera_calibration
+from camera_calibration import compute_projection_matrix
 
 def calculate_projection_matrix(image, markers):
     """
@@ -92,7 +92,7 @@ def calculate_projection_matrix(image, markers):
 
     # return M, residual
 
-    return camera_calibration(), None
+    return compute_projection_matrix(), None
 
 def normalize_coordinates(points):
     """
