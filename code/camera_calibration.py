@@ -5,8 +5,8 @@ import os
 from tqdm import tqdm
 
 def camera_calibration():
-    file_name0 = glob.glob('../data/extracredit/IMG_3385.jpg') 
-    file_name1 = glob.glob('../data/extracredit/IMG_3386.jpg') 
+    file_name0 = glob.glob('../data/extracredit/IMG_3390.jpg') 
+    file_name1 = glob.glob('../data/extracredit/IMG_3392.jpg') 
     image0 = cv2.imread(str(file_name0[0]))
     image1 = cv2.imread(str(file_name1[0]))
     # using two of the same image
@@ -47,7 +47,7 @@ def camera_calibration():
 def compute_projection_matrix():
     camera_matrix, dist_coeffs, board, aruco_dict, arucoParams = camera_calibration()
     
-    file_name = glob.glob('../data/extracredit/IMG_3385.jpg') 
+    file_name = glob.glob('../data/extracredit/IMG_3390.jpg') 
     image = cv2.imread(str(file_name[0]))
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # Detect markers as before

@@ -290,11 +290,11 @@ def matches_to_3d(points2d_1, points2d_2, M1, M2, threshold=1.0):
         ])
         x = np.array([[M1[0,3]-M1[2,3]*x1[0]], [M1[1,3]-M1[2,3]*x1[1]], [M2[0,3]-M2[2,3]*x2[0]], [M2[1,3]-M2[2,3]*x2[1]]])
         X, residual, _, _ = np.linalg.lstsq(A, x, rcond=None) # TODO: use the residual to threshold
-        if residual[0] < threshold:
-            X = X.reshape((3,))
-            points3d_inlier.append(X)
-            points2d_1_inlier.append(x1)
-            points2d_2_inlier.append(x2)
+        # if residual[0] < threshold:
+        X = X.reshape((3,))
+        points3d_inlier.append(X)
+        points2d_1_inlier.append(x1)
+        points2d_2_inlier.append(x2)
 
 
     ########################

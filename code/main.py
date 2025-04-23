@@ -60,8 +60,8 @@ def main():
     # for image_file in image_files:
     #     images.append(io.imread(os.path.join(data_dir, image_file)))
 
-    file_name0 = glob.glob('../data/extracredit/IMG_3385.jpg') 
-    file_name1 = glob.glob('../data/extracredit/IMG_3386.jpg') 
+    file_name0 = glob.glob('../data/extracredit/IMG_3390.jpg') 
+    file_name1 = glob.glob('../data/extracredit/IMG_3392.jpg') 
     image0 = cv2.imread(str(file_name0[0]))
     image1 = cv2.imread(str(file_name1[0]))
     images = [image0, image1]
@@ -105,21 +105,22 @@ def main():
 
         print('Calculating 3D points for accepted matches...')
         points3d_found, inliers1_from3d, inliers1_from3d = student.matches_to_3d(inliers1, inliers2, M1, M2)
+        print(points3d_found)
         points3d += points3d_found.tolist()
         points3d_color += [tuple(image1[int(point[1]), int(point[0]), :] / 255.0) for point in inliers1_from3d]
 
-    for key in markers:
-        points3d += markers[key]
-        points3d_color += [(0, 0, 0)] * 4
+    # for key in markers:
+    #     points3d += markers[key]
+    #     points3d_color += [(0, 0, 0)] * 4
 
-    i = 0
-    while i < len(points3d):
-        x, y, z = points3d[i]
-        if x < 0 or x > 7 or y < 0 or y > 7 or z < 0 or z > 7:
-            points3d.pop(i)
-            points3d_color.pop(i)
-            i -= 1
-        i += 1
+    # i = 0
+    # while i < len(points3d):
+    #     x, y, z = points3d[i]
+    #     if x < 0 or x > 7 or y < 0 or y > 7 or z < 0 or z > 7:
+    #         points3d.pop(i)
+    #         points3d_color.pop(i)
+    #         i -= 1
+    #     i += 1
 
     points3d = np.array(points3d)
 

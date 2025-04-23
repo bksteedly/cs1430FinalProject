@@ -40,6 +40,7 @@ def get_matches(image1, image2, num_keypoints=5000):
     orb = cv2.ORB_create(nfeatures=num_keypoints)
     kp1, des1 = orb.detectAndCompute(image1, None)
     kp2, des2 = orb.detectAndCompute(image2, None)
+    # print("kp1.shape: " + str(len(kp1)))
 
     # Match descriptors
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
