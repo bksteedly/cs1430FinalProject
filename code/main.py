@@ -63,8 +63,8 @@ def main():
     for image_file in image_files:
         images.append(io.imread(os.path.join(data_dir, image_file)))
 
+    print(images[0].shape)
     # markers = get_markers(os.path.join(args.data, "markers.txt"))
-
     print('Calibrating camera ...')
     camera_matrix, dist_coeffs, board, aruco_dict, aruco_params = camera_calibration.camera_calibration(images)
 
