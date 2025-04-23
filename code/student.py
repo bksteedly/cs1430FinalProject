@@ -204,36 +204,41 @@ def ransac_fundamental_matrix(matches1, matches2, num_iters):
     best_inliers_b = []
     best_inlier_residual = 0 
 
-    for iter in range(num_iters):
-        point_idx = np.random.choice(num_points, size=8, replace=False) 
-        small_points1_array = matches1[point_idx]
-        small_points2_array = matches2[point_idx]
+    # for iter in range(num_iters):
+    #     point_idx = np.random.choice(num_points, size=8, replace=False) 
+    #     small_points1_array = matches1[point_idx]
+    #     small_points2_array = matches2[point_idx]
         
-        # F, _ = cv2.findFundamentalMat(small_points1_array, small_points2_array, cv2.FM_8POINT, 1e10, 0, 1)
-        F, _ = estimate_fundamental_matrix(small_points1_array, small_points2_array)
+    #     # F, _ = cv2.findFundamentalMat(small_points1_array, small_points2_array, cv2.FM_8POINT, 1e10, 0, 1)
+    #     # F, _ = estimate_fundamental_matrix(small_points1_array, small_points2_array)
 
-        inliers_a = []
-        inliers_b = []
-        residual = 0
-        for i in range(num_points):
-            x1 = np.append(matches1[i], 1)
-            x2 = np.append(matches2[i], 1)
+    #     inliers_a = []
+    #     inliers_b = []
+    #     residual = 0
+    #     for i in range(num_points):
+    #         x1 = np.append(matches1[i], 1)
+    #         x2 = np.append(matches2[i], 1)
 
-            r = np.abs(np.dot(np.dot(x2.T, F), x1))
+    #         r = np.abs(np.dot(np.dot(x2.T, F), x1))
 
-            if r < threshold:
-                inliers_a.append(matches1[i])
-                inliers_b.append(matches2[i])
-                residual += r**2
+    #         if r < threshold:
+    #             inliers_a.append(matches1[i])
+    #             inliers_b.append(matches2[i])
+    #             residual += r**2
+    E, mask = cv2.findEssentialMat(matches1, matches2)
 
-        inlier_counts.append(len(inliers_a))
-        inlier_residuals.append(residual)
+        # inlier_counts.append(len(inliers_a))
+        # inlier_residuals.append(residual)
 
-        if len(inliers_a) > len(best_inliers_a):
-            best_Fmatrix = F
-            best_inliers_a = inliers_a
-            best_inliers_b = inliers_b
-            best_inlier_residual = residual
+        # if len(inliers_a) > len(best_inliers_a):
+        #     best_Fmatrix = F
+        #     best_inliers_a = inliers_a
+        #     best_inliers_b = inliers_b
+        #     best_inlier_residual = residual
+    mask = np.array(mask, dtype=bool)
+    mask = mask.flatten()
+    best_inliers_a = matches1[mask]
+    best_inliers_b = matches2[mask]
     
     best_inliers_a = np.array(best_inliers_a)
     best_inliers_b = np.array(best_inliers_b)
