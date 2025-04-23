@@ -3,8 +3,6 @@ import cv2
 import random
 import matplotlib.pyplot as plt
 
-from camera_calibration import compute_projection_matrix
-
 def calculate_projection_matrix(image, markers):
     """
     To solve for the projection matrix. You need to set up a system of
@@ -28,71 +26,70 @@ def calculate_projection_matrix(image, markers):
     # Markers is a dictionary mapping a marker ID to a 4x3 array
     # containing the 3d points for each of the 4 corners of the
     # marker in our scanning setup
-    # dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_1000)
-    # parameters = cv2.aruco.DetectorParameters_create()
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_1000)
+    parameters = cv2.aruco.DetectorParameters_create()
 
-    # markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(
-    #     image, dictionary, parameters=parameters)
-    # markerIds = [m[0] for m in markerIds]
-    # markerCorners = [m[0] for m in markerCorners]
+    markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(
+        image, dictionary, parameters=parameters)
+    markerIds = [m[0] for m in markerIds]
+    markerCorners = [m[0] for m in markerCorners]
 
-    # # image = cv2.imread("/Users/amulya/Documents/Brown/spring_2025/csci1430/cs1430FinalProject/data/extracredit/Checkerboard_pattern.jpg")
-    # # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # # print(gray)
-    # # pattern_size = (4,4)
-    # # print(pattern_size)
+    # image = cv2.imread("/Users/amulya/Documents/Brown/spring_2025/csci1430/cs1430FinalProject/data/extracredit/Checkerboard_pattern.jpg")
+    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # print(gray)
+    # pattern_size = (4,4)
+    # print(pattern_size)
 
-    # # ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
-    # # print(ret)
-    # # print(corners)
+    # ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
+    # print(ret)
+    # print(corners)
 
-    # # if ret:
-    # #     cv2.drawChessboardCorners(image, pattern_size, corners, ret)
-    # #     cv2.imshow('Chessboard Corners', image)
-    # #     cv2.waitKey(0)
-    # #     cv2.destroyAllWindows()
-    # # else:
-    # #     print("Chessboard pattern not found.")
+    # if ret:
+    #     cv2.drawChessboardCorners(image, pattern_size, corners, ret)
+    #     cv2.imshow('Chessboard Corners', image)
+    #     cv2.waitKey(0)
+    #     cv2.destroyAllWindows()
+    # else:
+    #     print("Chessboard pattern not found.")
 
-    # points2d = []
-    # points3d = []
+    points2d = []
+    points3d = []
 
-    # for markerId, marker in zip(markerIds, markerCorners):
-    #     if markerId in markers:
-    #         for j, corner in enumerate(marker):
-    #             points2d.append(corner)
-    #             points3d.append(markers[markerId][j])
+    for markerId, marker in zip(markerIds, markerCorners):
+        if markerId in markers:
+            for j, corner in enumerate(marker):
+                points2d.append(corner)
+                points3d.append(markers[markerId][j])
 
-    # points2d = np.array(points2d)
-    # points3d = np.array(points3d)
+    points2d = np.array(points2d)
+    points3d = np.array(points3d)
 
-    # ########################
-    # # TODO: Your code here #
-    # ########################
-    # num_points = points2d.shape[0]
-    # A = []
-    # b = []
+    ########################
+    # TODO: Your code here #
+    ########################
+    num_points = points2d.shape[0]
+    A = []
+    b = []
     
-    # for i in range(num_points):
-    #     [u, v] = points2d[i]
-    #     [X, Y, Z] = points3d[i]
+    for i in range(num_points):
+        [u, v] = points2d[i]
+        [X, Y, Z] = points3d[i]
 
-    #     A.append([X, Y, Z, 1, 0, 0, 0, 0, -X*u, -Y*u, -Z*u])
-    #     A.append([0, 0, 0, 0, X, Y, Z, 1, -X*v, -Y*v, -Z*v])
-    #     b.append([u])
-    #     b.append([v])
+        A.append([X, Y, Z, 1, 0, 0, 0, 0, -X*u, -Y*u, -Z*u])
+        A.append([0, 0, 0, 0, X, Y, Z, 1, -X*v, -Y*v, -Z*v])
+        b.append([u])
+        b.append([v])
 
-    # A = np.array(A)
-    # b = np.array(b)
+    A = np.array(A)
+    b = np.array(b)
 
 
-    # M, residual, _, _ = np.linalg.lstsq(A, b, rcond=None)
-    # M = np.append(M, 1)
-    # M = M.reshape((3, 4))
+    M, residual, _, _ = np.linalg.lstsq(A, b, rcond=None)
+    M = np.append(M, 1)
+    M = M.reshape((3, 4))
 
-    # return M, residual
+    return M, residual
 
-    return compute_projection_matrix(), None
 
 def normalize_coordinates(points):
     """

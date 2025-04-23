@@ -4,13 +4,7 @@ import glob
 import os
 from tqdm import tqdm
 
-def camera_calibration():
-    file_name0 = glob.glob('../data/extracredit/IMG_3390.jpg') 
-    file_name1 = glob.glob('../data/extracredit/IMG_3392.jpg') 
-    image0 = cv2.imread(str(file_name0[0]))
-    image1 = cv2.imread(str(file_name1[0]))
-    # using two of the same image
-    img_list = [image0, image1]
+def camera_calibration(img_list):
     aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_1000)
     markerLength = 3.75 # in cm
     # space between markers in the image
@@ -40,18 +34,13 @@ def camera_calibration():
     ret, mtx, dist, rvecs, tvecs = cv2.aruco.calibrateCameraAruco(corners_list, id_list, counter, board, img_gray.shape, None, None )
 
     print("Camera matrix is \n", mtx, "\n And is stored in calibration.yaml file along with distortion coefficients : \n", dist)
-    # data = {'camera_matrix': np.asarray(mtx).tolist(), 'dist_coeff': np.asarray(dist).tolist()}
         
     return mtx, dist, board, aruco_dict, arucoParams
 
-def compute_projection_matrix():
-    camera_matrix, dist_coeffs, board, aruco_dict, arucoParams = camera_calibration()
-    
-    file_name = glob.glob('../data/extracredit/IMG_3390.jpg') 
-    image = cv2.imread(str(file_name[0]))
+def compute_projection_matrix(image, camera_matrix, dist_coeffs, board, aruco_dict, aruco_params):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # Detect markers as before
-    corners, ids, _ = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=arucoParams)
+    corners, ids, _ = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
 
     # Estimate pose
     retval, rvec, tvec = cv2.aruco.estimatePoseBoard(corners, ids, board, camera_matrix, dist_coeffs, None, None)

@@ -8,6 +8,7 @@ import cv2
 from helpers import show_reprojections, get_matches, show_point_cloud, \
     get_markers, show_matches
 import student
+import camera_calibration
 
 
 def parse_args():
@@ -52,26 +53,25 @@ def parse_args():
 def main():
     args = parse_args()
 
-    data_dir = os.path.join(args.data, args.sequence)
+    # data_dir = os.path.join(args.data, args.sequence)
+    data_dir = '../data/extracredit/textbook'
     image_files = os.listdir(data_dir)
 
-    print(f'Loading {len(image_files)} images for {args.sequence} sequence...')
-    # images = []
-    # for image_file in image_files:
-    #     images.append(io.imread(os.path.join(data_dir, image_file)))
+    # print(f'Loading {len(image_files)} images for {args.sequence} sequence...')
+    print(f'Loading files from {data_dir}')
+    images = []
+    for image_file in image_files:
+        images.append(io.imread(os.path.join(data_dir, image_file)))
 
-    file_name0 = glob.glob('../data/extracredit/IMG_3390.jpg') 
-    file_name1 = glob.glob('../data/extracredit/IMG_3392.jpg') 
-    image0 = cv2.imread(str(file_name0[0]))
-    image1 = cv2.imread(str(file_name1[0]))
-    images = [image0, image1]
+    # markers = get_markers(os.path.join(args.data, "markers.txt"))
 
-    markers = get_markers(os.path.join(args.data, "markers.txt"))
+    print('Calibrating camera ...')
+    camera_matrix, dist_coeffs, board, aruco_dict, aruco_params = camera_calibration.camera_calibration(images)
 
     print('Calculating projection matrices...')
     Ms = []
     for image in images:
-        M, residual = student.calculate_projection_matrix(image, markers)
+        M = camera_calibration.compute_projection_matrix(image, camera_matrix, dist_coeffs, board, aruco_dict, aruco_params)
         Ms.append(M)
 
     # if not args.no_intermediate_vis:
