@@ -54,7 +54,7 @@ def main():
     args = parse_args()
 
     # data_dir = os.path.join(args.data, args.sequence)
-    data_dir = '../data/extracredit/textbook'
+    data_dir = '../data/extracredit/dry_erase_marker'
     image_files = os.listdir(data_dir)
 
     # print(f'Loading {len(image_files)} images for {args.sequence} sequence...')

@@ -49,7 +49,7 @@ def compute_projection_matrix(image, camera_matrix, dist_coeffs, board, aruco_di
     extrinsic = np.hstack((R, tvec))
     projection_matrix = camera_matrix @ extrinsic
 
-    print(f"projection_matrix: {projection_matrix}")
+    # print(f"projection_matrix: {projection_matrix}")
     return projection_matrix
 
 
