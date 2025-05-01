@@ -773,8 +773,55 @@ def segment(verts, texcoords):
         cv2.waitKey(1)
 
 
+def segment_classifier(verts, texcoords):
+    from learning3d.models import Classifier, PointNet, Segmentation
+    import torch
+    import pyrealsense2 as rs
+    import numpy as np
+    import cv2
+    from torch.utils.data import DataLoader 
+
+    pnet = PointNet(global_feat=False)
+    model = Segmentation(feature_model=pnet, num_classes=40)
+    model.eval()
+    data = np.expand_dims(np.array(verts), axis=0)
+    data = torch.from_numpy(data)
+    dataset = SegmentationData(data)
+    dataloader = DataLoader(dataset=dataset)
+    
+    for i, pt_data in enumerate(dataloader):
+        output = model(pt_data)
+    
+    predictions = torch.argmax(output, dim=-1)
+    print(predictions)
+
+    # need to project the verts to 2d and then color the 2d verts based on the prediction
+    num_classes = 40
+    colors = np.random.randint(0, 255, (num_classes, 3))
+    color_source = colors[predictions[0]]
+    color_source = color_source.astype(np.uint8)
+    
+
+
+from torch.utils.data import Dataset
+
+class SegmentationData(Dataset):
+    def __init__(self, data):
+        self.data = data
+        
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        return self.data[index]
+
 if __name__ == '__main__':
     # point_cloud()
     # stream
-    verts, texcoords = point_cloud()
-    segment(verts, texcoords)
+    import numpy as np
+    # verts, texcoords = point_cloud()
+    # np.save('verts.npy', verts)
+    # np.save('textcoords.npy', texcoords)
+    verts = np.load('verts.npy')
+    texcoords = np.load('textcoords.npy')
+    segment_classifier(verts, texcoords)
