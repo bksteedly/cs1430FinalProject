@@ -803,33 +803,6 @@ def segment_classifier(verts, texcoords, camera_info):
     color_source = color_source.astype(np.uint8)
     print(verts.shape)
 
-    # # Create a pipeline and configure the stream
-    # pipeline = rs.pipeline()
-    # config = rs.config()
-    # config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-    # config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-
-    # # Start the pipeline
-    # pipeline.start(config)
-
-    # # Get the intrinsic parameters of the color stream
-    # profile = pipeline.get_active_profile()
-    # color_stream = profile.get_stream(rs.stream.color)
-    # intrinsics = color_stream.as_video_stream_profile().get_intrinsics()
-
-    # # Extract the intrinsic parameters
-    # fx, fy = intrinsics.fx, intrinsics.fy
-    # cx, cy = intrinsics.ppx, intrinsics.ppy
-
-    # fx, fy = 306.17877197265625, 306.9290466308594
-    # cx, cy = 158.52369689941406, 122.74759674072266
-
-    # camera_matrix = np.array([[fx, 0, cx], 
-    #                     [0, fy, cy], 
-    #                     [0, 0, 1]], np.float32) 
-
-    # rvec = np.zeros((3, 1), np.float32)
-    # tvec = np.zeros((3, 1), np.float32)
     h,w = 240, 424
     out = np.zeros((h, w, 3), dtype=np.uint8)
     # w, h = depth_intrinsics.width, depth_intrinsics.height
@@ -884,10 +857,10 @@ def segment_classifier(verts, texcoords, camera_info):
     print("j: " + str(j.shape))
 
     out[i[m], j[m]] = color_source[u[m], v[m]]
-    import matplotlib.pyplot as plt
-    plt.imshow(out)
-    plt.axis('off')    # Hide axes for a cleaner view
-    plt.show() 
+
+    cv2.imshow("image", out)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
     
