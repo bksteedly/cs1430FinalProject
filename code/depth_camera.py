@@ -773,10 +773,10 @@ def segment(verts, texcoords):
         cv2.waitKey(1)
 
 
-def segment_classifier(verts, texcoords):
+def segment_classifier(verts, texcoords, camera_info):
     from learning3d.models import Classifier, PointNet, Segmentation
     import torch
-    import pyrealsense2 as rs
+    # import pyrealsense2 as rs
     import numpy as np
     import cv2
     from torch.utils.data import DataLoader 
@@ -793,13 +793,103 @@ def segment_classifier(verts, texcoords):
         output = model(pt_data)
     
     predictions = torch.argmax(output, dim=-1)
-    print(predictions)
+    print("predictions: " + str(predictions))
+    print(predictions.shape)
 
     # need to project the verts to 2d and then color the 2d verts based on the prediction
     num_classes = 40
     colors = np.random.randint(0, 255, (num_classes, 3))
     color_source = colors[predictions[0]]
     color_source = color_source.astype(np.uint8)
+    print(verts.shape)
+
+    # # Create a pipeline and configure the stream
+    # pipeline = rs.pipeline()
+    # config = rs.config()
+    # config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    # config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+    # # Start the pipeline
+    # pipeline.start(config)
+
+    # # Get the intrinsic parameters of the color stream
+    # profile = pipeline.get_active_profile()
+    # color_stream = profile.get_stream(rs.stream.color)
+    # intrinsics = color_stream.as_video_stream_profile().get_intrinsics()
+
+    # # Extract the intrinsic parameters
+    # fx, fy = intrinsics.fx, intrinsics.fy
+    # cx, cy = intrinsics.ppx, intrinsics.ppy
+
+    # fx, fy = 306.17877197265625, 306.9290466308594
+    # cx, cy = 158.52369689941406, 122.74759674072266
+
+    # camera_matrix = np.array([[fx, 0, cx], 
+    #                     [0, fy, cy], 
+    #                     [0, 0, 1]], np.float32) 
+
+    # rvec = np.zeros((3, 1), np.float32)
+    # tvec = np.zeros((3, 1), np.float32)
+    h,w = 240, 424
+    out = np.zeros((h, w, 3), dtype=np.uint8)
+    # w, h = depth_intrinsics.width, depth_intrinsics.height
+    # out = np.empty((h, w, 3), dtype=np.uint8)
+
+    def project(v):
+        """project 3d vector array to 2d"""
+        h, w = out.shape[:2]
+        view_aspect = float(h)/w
+
+        # ignore divide by zero for invalid depth
+        with np.errstate(divide='ignore', invalid='ignore'):
+            proj = v[:, :-1] / v[:, -1, np.newaxis] * \
+                (w*view_aspect, h) + (w/2.0, h/2.0)
+
+        # near clipping
+        znear = 0.03
+        proj[v[:, 2] < znear] = np.nan
+        return proj
+    proj = project(verts)
+    print(proj.shape)
+
+    painter = True
+    # proj now contains 2d image coordinates
+    proj = np.clip(proj, 0, np.inf)
+    j, i = proj.astype(np.uint32).T
+
+    # create a mask to ignore out-of-bound indices
+    im = (i >= 0) & (i < h)
+    jm = (j >= 0) & (j < w)
+    m = im & jm
+
+    cw, ch = color_source.shape[:2][::-1]
+    # if painter:
+    #     # sort texcoord with same indices as above
+    #     # texcoords are [0..1] and relative to top-left pixel corner,
+    #     # multiply by size and add 0.5 to center
+    #     v, u = (texcoords[s] * (cw, ch) + 0.5).astype(np.uint32).T
+    # else:
+    v, u = (texcoords * (cw, ch) + 0.5).astype(np.uint32).T
+    # clip texcoords to image
+    np.clip(u, 0, ch-1, out=u)
+    np.clip(v, 0, cw-1, out=v)
+
+    # perform uv-mapping
+    color_source = color_source.reshape(out.shape)
+    print("color_source: " + str(color_source.shape))
+    print("u: " + str(u.shape))
+    print("v: " + str(v.shape))
+    print("out: " + str(out.shape))
+    print("i: " + str(i.shape))
+    print("j: " + str(j.shape))
+
+    out[i[m], j[m]] = color_source[u[m], v[m]]
+    import matplotlib.pyplot as plt
+    plt.imshow(out)
+    plt.axis('off')    # Hide axes for a cleaner view
+    plt.show() 
+
+
     
 
 
@@ -824,4 +914,5 @@ if __name__ == '__main__':
     # np.save('textcoords.npy', texcoords)
     verts = np.load('verts.npy')
     texcoords = np.load('textcoords.npy')
-    segment_classifier(verts, texcoords)
+    camera_info = {"pivot": 0, "rotation": 0, "translation": 0, "scale": False, "decimate": 0}
+    segment_classifier(verts, texcoords, camera_info)
