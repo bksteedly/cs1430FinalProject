@@ -82,36 +82,63 @@ class Normalize(object):
 
         return  norm_pointcloud
 
-def load_train_data(load_from_raw=False):
+def load_data(load_from_raw=False, load_train=True):
     with open('../data/modelnet40/encoding_metadata.json', 'r') as f:
         encoding_metadata = json.load(f)
     # encoding_metadata = {}
-    
-    if load_from_raw:
-        data_dir = '/Users/amulya/Desktop/modelnet40-princeton-3d-object-dataset/ModelNet40'
-        classes = os.listdir(data_dir)
-        train_data = []
-        for c in classes:
-            np_file = []
-            print(f'Working on class {c} ...')
-            
-            for file in os.listdir(data_dir+'/'+c+'/test'):
-                pointcloud = read_off_file(data_dir+'/'+c+'/test/'+file)
-                np_file.append(pointcloud)
-                train_data.append({'pointcloud': pointcloud, 'label': c})
-            
-            np.save(f'../data/modelnet40/test/{c}.npy', np.array(np_file))
-            print('Saved test data')
-        return train_data
+
+    if load_train:
+        if load_from_raw:
+            data_dir = '/Users/amulya/Desktop/modelnet40-princeton-3d-object-dataset/ModelNet40'
+            classes = os.listdir(data_dir)
+            train_data = []
+            for c in classes:
+                np_file = []
+                print(f'Working on class {c} ...')
+                
+                for file in os.listdir(data_dir+'/'+c+'/train'):
+                    pointcloud = read_off_file(data_dir+'/'+c+'/train/'+file)
+                    np_file.append(pointcloud)
+                    train_data.append({'pointcloud': pointcloud, 'label': c})
+                
+                np.save(f'../data/modelnet40/train/{c}.npy', np.array(np_file))
+                print('Saved training data')
+            return train_data
+        else:
+            data_dir = '../data/modelnet40/train/'
+            np_files = os.listdir(data_dir)
+            train_data = []
+            for file in tqdm(np_files, desc='Loading model net 40 numpy files'):
+                pointcloud = np.load(data_dir+file)
+                label = file.split('.')[0]
+                train_data.append({'pointcloud': pointcloud, 'label': np.array(encoding_metadata[label])})
+            return train_data
     else:
-        data_dir = '../data/modelnet40/train/'
-        np_files = os.listdir(data_dir)
-        train_data = []
-        for file in tqdm(np_files, desc='Loading model net 40 numpy files'):
-            pointcloud = np.load(data_dir+file)
-            label = file.split('.')[0]
-            train_data.append({'pointcloud': pointcloud, 'label': np.array(encoding_metadata[label])})
-        return train_data
+        if load_from_raw:
+            data_dir = '/Users/amulya/Desktop/modelnet40-princeton-3d-object-dataset/ModelNet40'
+            classes = os.listdir(data_dir)
+            test_data = []
+            for c in classes:
+                np_file = []
+                print(f'Working on class {c} ...')
+                
+                for file in os.listdir(data_dir+'/'+c+'/test'):
+                    pointcloud = read_off_file(data_dir+'/'+c+'/test/'+file)
+                    np_file.append(pointcloud)
+                    test_data.append({'pointcloud': pointcloud, 'label': c})
+                
+                np.save(f'../data/modelnet40/test/{c}.npy', np.array(np_file))
+                print('Saved testing data')
+            return test_data
+        else:
+            data_dir = '../data/modelnet40/test/'
+            np_files = os.listdir(data_dir)
+            test_data = []
+            for file in tqdm(np_files, desc='Loading model net 40 numpy files'):
+                pointcloud = np.load(data_dir+file)
+                label = file.split('.')[0]
+                test_data.append({'pointcloud': pointcloud, 'label': np.array(encoding_metadata[label])})
+            return test_data
     
         
 
@@ -141,7 +168,35 @@ def train():
     pnet = PointNet(global_feat=True)
     model = Classifier(feature_model=pnet)
 
-    train_data = load_train_data()
+    train_data = load_data()
+    trainset = Data(train_data)
+    trainloader = DataLoader(trainset, batch_size=32, shuffle=True, drop_last=True)
+
+    learnable_params = filter(lambda p: p.requires_grad, model.parameters())
+    optimizer = torch.optim.Adam(learnable_params)
+
+    loss_fn = ClassificationLoss()
+
+    epochs = 50
+    for i in range(epochs):
+        for j, data in enumerate(tqdm(trainloader, desc=f"Epoch {i+1}/{epochs}")):
+            points, target = data
+            target = target.squeeze(-1)
+            output = model(points.float())
+            target_indices = target.argmax(dim=1)
+            loss = loss_fn(output, target_indices)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+    torch.save(model.state_dict(), "pointnet_segmentation_model.pth")
+
+def test():
+    pnet = PointNet(global_feat=True)
+    model = Classifier(feature_model=pnet)
+
+    test_data = load_data()
     trainset = Data(train_data)
     trainloader = DataLoader(trainset, batch_size=32, shuffle=True, drop_last=True)
 
@@ -167,6 +222,37 @@ def train():
 
 
 if __name__ == "__main__":
-    load_train_data(load_from_raw=True)
+    # load_train_data(load_from_raw=True)
+
+    # model = torch.load('/Users/amulya/Desktop/learning3d/pretrained/exp_classifier/models/best_ptnet_model.t7', map_location=torch.device('cpu'))
+    # print(model)
+    # model.eval()
+    test_data = load_data(load_train=False)
+    print(type(test_data))
+    print(type(test_data[0]))
+    # testset = Data(test_data)
+    # testloader = DataLoader(testset, batch_size=1, shuffle=True, drop_last=True)
+    
+    # # ex, label = next(iter(testloader))
+    # # print("label:", label)
+    # # print(type(model))
+    # # output = model(ex.float())
+    # # print(output)
+    
+    # pnet = PointNet(global_feat=True)
+    # model = Classifier(feature_model=pnet)
+    # model.load_state_dict(torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu')))
+    # model.eval()
+
+    # for i in range(1):
+    #     for j, data in enumerate(tqdm(testloader)):
+    #         points, target = data
+    #         target = target.squeeze(-1)
+    #         output = model(points.float())
+    #         target_indices = target.argmax(dim=1)
+    #         print(f'target: {target_indices} and output: {output.argmax(dim=1)}')
+            
+
+
 
 
