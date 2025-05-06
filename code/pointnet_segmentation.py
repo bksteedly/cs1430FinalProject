@@ -177,8 +177,9 @@ def train():
 
     loss_fn = ClassificationLoss()
 
-    epochs = 50
+    epochs = 300
     for i in range(epochs):
+        total_loss = 0
         for j, data in enumerate(tqdm(trainloader, desc=f"Epoch {i+1}/{epochs}")):
             points, target = data
             target = target.squeeze(-1)
@@ -186,9 +187,14 @@ def train():
             target_indices = target.argmax(dim=1)
             loss = loss_fn(output, target_indices)
 
+            correct = (target_indices == output.argmax(dim=1)).sum().item()
+            total_loss += loss.item()
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+        print("Accuracy: " + str(correct/len(points)))
+        print("Loss: " + str(total_loss/len(points)))
 
     torch.save(model.state_dict(), "pointnet_segmentation_model.pth")
 
@@ -211,16 +217,14 @@ def test():
         target_indices = target.argmax(dim=1)
         predictions = output.argmax(dim=1)
 
-        for t, p in zip (target_indices, predictions):
-            total += 1
-            if t == p:
-                accuracy += 1
+        accuracy += (target_indices == predictions).sum().item()
+        total += len(points)
 
     print('Accuracy:', round(accuracy/total, 4))
 
 
 if __name__ == "__main__":
-    test()
+    train()
     # load_train_data(load_from_raw=True)
 
     # model = torch.load('/Users/amulya/Desktop/learning3d/pretrained/exp_classifier/models/best_ptnet_model.t7', map_location=torch.device('cpu'))
