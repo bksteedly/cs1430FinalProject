@@ -1,3 +1,7 @@
+from tqdm import tqdm
+from pointnet_segmentation import Data, DataLoader
+from learning3d.models import PointNet, Segmentation, Classifier
+import torch
 def point_cloud():
     # License: Apache 2.0. See LICENSE file in root directory.
     # Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
@@ -898,4 +902,24 @@ if __name__ == '__main__':
     texcoords = np.load('textcoords.npy')
     camera_info = {"pivot": 0, "rotation": 0, "translation": 0, "scale": False, "decimate": 0}
     # segment_classifier(verts, texcoords, camera_info)
-    classify(verts)
+    # classify(verts)
+    # d = {'pointcloud': np.array([verts]), 'label':np.zeros((1,40))}
+    x = [{'pointcloud': np.array([verts]), 'label':np.zeros((1,40))}]
+    print(x)
+    data = Data(x)
+    dataloader = DataLoader(data, batch_size=1, shuffle=True, drop_last=True)
+
+    pnet = PointNet(global_feat=True)
+    model = Classifier(feature_model=pnet)
+    checkpoint = torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu'))  
+    model.load_state_dict(checkpoint)  
+    model.eval()
+    for j, data in enumerate(tqdm(dataloader)):
+        points, target = data
+        target = target.squeeze(-1)
+        output = model(points.float())
+        target_indices = target.argmax(dim=1)
+        print("result: " + str(output.argmax(dim=1)))
+    # probabilities = torch.nn.functional.softmax(logits, dim=-1)
+    # predicted_class = torch.argmax(probabilities, dim=-1)
+    # print(predicted_class)
