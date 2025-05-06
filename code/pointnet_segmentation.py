@@ -95,13 +95,13 @@ def load_train_data(load_from_raw=False):
             np_file = []
             print(f'Working on class {c} ...')
             
-            for file in os.listdir(data_dir+'/'+c+'/train'):
-                pointcloud = read_off_file(data_dir+'/'+c+'/train/'+file)
+            for file in os.listdir(data_dir+'/'+c+'/test'):
+                pointcloud = read_off_file(data_dir+'/'+c+'/test/'+file)
                 np_file.append(pointcloud)
                 train_data.append({'pointcloud': pointcloud, 'label': c})
             
-            np.save(f'{c}.npy', np.array(np_file))
-            print('Saved training data')
+            np.save(f'../data/modelnet40/test/{c}.npy', np.array(np_file))
+            print('Saved test data')
         return train_data
     else:
         data_dir = '../data/modelnet40/train/'
@@ -167,6 +167,6 @@ def train():
 
 
 if __name__ == "__main__":
-    train()
+    load_train_data(load_from_raw=True)
 
 
