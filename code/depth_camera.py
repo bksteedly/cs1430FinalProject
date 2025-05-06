@@ -31,6 +31,8 @@ def point_cloud():
     import cv2
     import numpy as np
     import pyrealsense2 as rs
+    import torch
+    from learning3d.models import PointNet, Segmentation, Classifier
 
     class AppState:
 
@@ -878,6 +880,13 @@ class SegmentationData(Dataset):
     def __getitem__(self, index):
         return self.data[index]
 
+def classify(verts):
+    pnet = PointNet(global_feat=True)
+    model = Classifier(feature_model=pnet)
+    checkpoint = torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu'))  
+    model.load_state_dict(checkpoint)  
+    model.eval()
+
 if __name__ == '__main__':
     # point_cloud()
     # stream
@@ -888,4 +897,5 @@ if __name__ == '__main__':
     verts = np.load('verts.npy')
     texcoords = np.load('textcoords.npy')
     camera_info = {"pivot": 0, "rotation": 0, "translation": 0, "scale": False, "decimate": 0}
-    segment_classifier(verts, texcoords, camera_info)
+    # segment_classifier(verts, texcoords, camera_info)
+    classify(verts)
