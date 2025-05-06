@@ -195,42 +195,41 @@ def train():
 def test():
     pnet = PointNet(global_feat=True)
     model = Classifier(feature_model=pnet)
+    model.load_state_dict(torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu')))
+    model.eval()
 
-    test_data = load_data()
-    trainset = Data(train_data)
-    trainloader = DataLoader(trainset, batch_size=32, shuffle=True, drop_last=True)
+    test_data = load_data(load_train=False)
+    testset = Data(test_data)
+    testloader = DataLoader(testset, batch_size=32, shuffle=True, drop_last=True)
 
-    learnable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = torch.optim.Adam(learnable_params)
+    accuracy = 0
+    total = 0
+    for j, data in enumerate(tqdm(testloader)):
+        points, target = data
+        target = target.squeeze(-1)
+        output = model(points.float())
+        target_indices = target.argmax(dim=1)
+        predictions = output.argmax(dim=1)
 
-    loss_fn = ClassificationLoss()
+        for t, p in zip (target_indices, predictions):
+            total += 1
+            if t == p:
+                accuracy += 1
 
-    epochs = 50
-    for i in range(epochs):
-        for j, data in enumerate(tqdm(trainloader, desc=f"Epoch {i+1}/{epochs}")):
-            points, target = data
-            target = target.squeeze(-1)
-            output = model(points.float())
-            target_indices = target.argmax(dim=1)
-            loss = loss_fn(output, target_indices)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-    torch.save(model.state_dict(), "pointnet_segmentation_model.pth")
+    print('Accuracy:', round(accuracy/total, 4))
 
 
 if __name__ == "__main__":
+    test()
     # load_train_data(load_from_raw=True)
 
     # model = torch.load('/Users/amulya/Desktop/learning3d/pretrained/exp_classifier/models/best_ptnet_model.t7', map_location=torch.device('cpu'))
     # print(model)
     # model.eval()
-    test_data = load_data(load_train=False)
-    print(type(test_data))
-    print(type(test_data[0]))
-    # testset = Data(test_data)
+    # test_data = load_data(load_train=False)
+    # print(type(test_data))
+    # print(type(test_data[0]))
+    # # testset = Data(test_data)
     # testloader = DataLoader(testset, batch_size=1, shuffle=True, drop_last=True)
     
     # # ex, label = next(iter(testloader))
