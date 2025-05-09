@@ -306,16 +306,16 @@ def point_cloud():
         # perform uv-mapping
         out[i[m], j[m]] = color[u[m], v[m]]
 
-    out1 = np.empty((h, w, 3), dtype=np.uint8)
-    out2 = np.empty((h, w, 3), dtype=np.uint8)
-    out3 = np.empty((h, w, 3), dtype=np.uint8)
-    out4 = np.empty((h, w, 3), dtype=np.uint8)
-    out5 = np.empty((h, w, 3), dtype=np.uint8)
-    out6 = np.empty((h, w, 3), dtype=np.uint8)
-    out7 = np.empty((h, w, 3), dtype=np.uint8)
-    out8 = np.empty((h, w, 3), dtype=np.uint8)
-    out9 = np.empty((h, w, 3), dtype=np.uint8)
-    out10 = np.empty((h, w, 3), dtype=np.uint8)
+    # out1 = np.empty((h, w, 3), dtype=np.uint8)
+    # out2 = np.empty((h, w, 3), dtype=np.uint8)
+    # out3 = np.empty((h, w, 3), dtype=np.uint8)
+    # out4 = np.empty((h, w, 3), dtype=np.uint8)
+    # out5 = np.empty((h, w, 3), dtype=np.uint8)
+    # out6 = np.empty((h, w, 3), dtype=np.uint8)
+    # out7 = np.empty((h, w, 3), dtype=np.uint8)
+    # out8 = np.empty((h, w, 3), dtype=np.uint8)
+    # out9 = np.empty((h, w, 3), dtype=np.uint8)
+    # out10 = np.empty((h, w, 3), dtype=np.uint8)
     try:
         while True:
             # print('inside while loop')
@@ -364,18 +364,20 @@ def point_cloud():
                 clusters[label].append(pt)
             print('grouped verts')
             
-            outs = []
-            for c in clusters:
+            # outs = []
+            for i, c in enumerate(clusters):
                 o = np.empty((h, w, 3), dtype=np.uint8)
                 c = np.array(c)
                 dt, o = render(c, texcoords, color_source, depth_intrinsics, o)
-                outs.append(o)
+                cv2.imshow(f"out{i}", o)
+                break
+                # outs.append(o)
 
-            print('len of outs:', len(outs))
+            # print('len of outs:', len(outs))
             print('num points in cluster1:', len(clusters[0]))
             print('num points in cluster2:', len(clusters[1]))
-            cv2.imshow("out0", outs[0])
-            cv2.imshow("out1", outs[1])
+            # cv2.imshow("out0", outs[0])
+            # cv2.imshow("out1", outs[1])
             # combined_img = np.vstack((outs[0], outs[1]))
 
 
