@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from pointnet_segmentation import Data, DataLoader
+from pointnet_segmentation import Data, DataLoader, classify
 from learning3d.models import PointNet, Segmentation, Classifier
 import torch
 from kmeans import dbscan_cluster, hdbscan_cluster, kmeans_cluster
@@ -357,16 +357,17 @@ def point_cloud():
             
 
             clusters, sub_texcoords = kmeans_cluster(verts, texcoords)
-            print("type of verts: " + str(type(verts)))
-            print("type of clusters: " + str(type(np.array(clusters[0]))))
-            print("shape of verts: " + str(verts.shape))
-            print("shape of clusters: " + str(np.array(clusters[0]).shape))
-            print("shape of texcoords: " + str(texcoords.shape))
-            print("shape of sub_texcoords: " + str(np.array(sub_texcoords[0]).shape))
-            print("shape of color_source: " + str(color_source.shape))
+            # print("type of verts: " + str(type(verts)))
+            # print("type of clusters: " + str(type(np.array(clusters[0]))))
+            # print("shape of verts: " + str(verts.shape))
+            # print("shape of clusters: " + str(np.array(clusters[0]).shape))
+            # print("shape of texcoords: " + str(texcoords.shape))
+            # print("shape of sub_texcoords: " + str(np.array(sub_texcoords[0]).shape))
+            # print("shape of color_source: " + str(color_source.shape))
 
 
             dt, out = render(out, np.array(clusters[0]), np.array(sub_texcoords[0]), color_source, depth_intrinsics)
+            print(classify(np.array(clusters[0])))
 
             cv2.setWindowTitle(
                 state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
@@ -887,12 +888,13 @@ class SegmentationData(Dataset):
     def __getitem__(self, index):
         return self.data[index]
 
-def classify(verts):
-    pnet = PointNet(global_feat=True)
-    model = Classifier(feature_model=pnet)
-    checkpoint = torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu'))  
-    model.load_state_dict(checkpoint)  
-    model.eval()
+# def classify(verts):
+#     pnet = PointNet(global_feat=True)
+#     model = Classifier(feature_model=pnet)
+#     checkpoint = torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu'))  
+#     model.load_state_dict(checkpoint)  
+#     model.eval()
+
 
 if __name__ == '__main__':
     point_cloud()
