@@ -306,8 +306,8 @@ def point_cloud():
         # perform uv-mapping
         out[i[m], j[m]] = color[u[m], v[m]]
 
-    # out1 = np.empty((h, w, 3), dtype=np.uint8)
-    # out2 = np.empty((h, w, 3), dtype=np.uint8)
+    out1 = np.empty((h, w, 3), dtype=np.uint8)
+    out2 = np.empty((h, w, 3), dtype=np.uint8)
     # out3 = np.empty((h, w, 3), dtype=np.uint8)
     # out4 = np.empty((h, w, 3), dtype=np.uint8)
     # out5 = np.empty((h, w, 3), dtype=np.uint8)
@@ -365,14 +365,16 @@ def point_cloud():
             print('grouped verts')
             
             # outs = []
-            for i, c in enumerate(clusters):
-                o = np.empty((h, w, 3), dtype=np.uint8)
-                c = np.array(c)
-                dt, o = render(c, texcoords, color_source, depth_intrinsics, o)
-                cv2.imshow(f"out{i}", o)
-                break
-                # outs.append(o)
+            # for i, c in enumerate(clusters):
+            #     o = np.empty((h, w, 3), dtype=np.uint8)
+            #     c = np.array(c)
+            #     dt, o = render(c, texcoords, color_source, depth_intrinsics, o)
+            #     cv2.imshow(f"out{i}", o)
+            #     # outs.append(o)
 
+            
+            cluster1 = np.array(clusters[0])
+            cluster2 = np.array(clusters[1])
             # print('len of outs:', len(outs))
             print('num points in cluster1:', len(clusters[0]))
             print('num points in cluster2:', len(clusters[1]))
@@ -387,8 +389,8 @@ def point_cloud():
             # return verts, texcoords
 
             # # Render
-            # dt1, out1 = render(cluster1, texcoords, color_source, depth_intrinsics, out1)
-            # dt2, out2 = render(cluster2, texcoords, color_source, depth_intrinsics, out2)
+            dt1, out1 = render(cluster1, texcoords, color_source, depth_intrinsics, out1)
+            dt2, out2 = render(cluster2, texcoords, color_source, depth_intrinsics, out2)
             # dt3, out3 = render(cluster3, texcoords, color_source, depth_intrinsics, out3)
             # dt4, out4 = render(cluster4, texcoords, color_source, depth_intrinsics, out4)
             # dt5, out5 = render(cluster5, texcoords, color_source, depth_intrinsics, out5)
@@ -406,7 +408,8 @@ def point_cloud():
             # row2 = np.hstack((out6, out7, out8, out9, out10))
             # combined_img = np.vstack((row1, row2))
             # cv2.imshow("result", combined_img)
-            # cv2.imshow("out5", out5)
+            cv2.imshow("out1", out1)
+            cv2.imshow("out2", out2)
 
             key = cv2.waitKey(1)
             # key = cv2.waitKey(1)
