@@ -5,7 +5,7 @@ import numpy as np
 
 def dbscan_cluster(verts):
     print('starting clustering')
-    cluster_labels = DBSCAN(eps=0.5, min_samples=5,metric='euclidean').fit_predict(verts)
+    cluster_labels = DBSCAN(eps=0.5, min_samples=2,metric='euclidean').fit_predict(verts)
     # print(cluster_labels.shape)
     # print(np.unique(cluster_labels))
     return cluster_labels

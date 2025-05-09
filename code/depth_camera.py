@@ -351,8 +351,12 @@ def point_cloud():
 
             # Pointcloud data to arrays
             v, t = points.get_vertices(), points.get_texture_coordinates()
-            verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
-            texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)
+            verts_uncleaned = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+            texcoords_uncleaned = np.asanyarray(t).view(np.float32).reshape(-1, 2)
+            zero_indices = np.all(verts_uncleaned != 0.0, axis=1)
+            indeces = np.where(zero_indices)[0]
+            verts = verts_uncleaned[indeces]
+            texcoords = texcoords_uncleaned[indeces]
             # cluster1, cluster2, cluster3, cluster4, cluster5, cluster6, cluster7, cluster8, cluster9, cluster10 = cluster(verts)
             cluster_labels = dbscan_cluster(verts)
             print('finished clustering')
@@ -363,21 +367,27 @@ def point_cloud():
                 label = cluster_labels[i]
                 clusters[label].append(pt)
             print('grouped verts')
+            print('num clusters:', len(clusters))
+            for i in range(len(clusters)):
+                print(f'cluster {i+1} has {len(clusters[i])} points')
+                print(clusters[i])
             
-            # outs = []
-            # for i, c in enumerate(clusters):
-            #     o = np.empty((h, w, 3), dtype=np.uint8)
-            #     c = np.array(c)
-            #     dt, o = render(c, texcoords, color_source, depth_intrinsics, o)
-            #     cv2.imshow(f"out{i}", o)
-            #     # outs.append(o)
-
+            outs = []
+            for i, c in enumerate(clusters):
+                o = np.empty((h, w, 3), dtype=np.uint8)
+                c = np.array(c)
+                dt, o = render(c, texcoords, color_source, depth_intrinsics, o)
+                cv2.imshow(f"out{i}", o)
+                # outs.append(o)
             
-            cluster1 = np.array(clusters[0])
-            cluster2 = np.array(clusters[1])
+            
+            # cluster1 = np.array(clusters[0])
+            # cluster2 = np.array(clusters[1])
             # print('len of outs:', len(outs))
-            print('num points in cluster1:', len(clusters[0]))
-            print('num points in cluster2:', len(clusters[1]))
+            # print('num points in cluster1:', len(clusters[0]))
+            # print("cluster1", cluster1)
+            # print('num points in cluster2:', len(clusters[1]))
+            # print('cluster2:', cluster2)
             # cv2.imshow("out0", outs[0])
             # cv2.imshow("out1", outs[1])
             # combined_img = np.vstack((outs[0], outs[1]))
@@ -389,8 +399,8 @@ def point_cloud():
             # return verts, texcoords
 
             # # Render
-            dt1, out1 = render(cluster1, texcoords, color_source, depth_intrinsics, out1)
-            dt2, out2 = render(cluster2, texcoords, color_source, depth_intrinsics, out2)
+            # dt1, out1 = render(cluster1, texcoords, color_source, depth_intrinsics, out1)
+            # dt2, out2 = render(cluster2, texcoords, color_source, depth_intrinsics, out2)
             # dt3, out3 = render(cluster3, texcoords, color_source, depth_intrinsics, out3)
             # dt4, out4 = render(cluster4, texcoords, color_source, depth_intrinsics, out4)
             # dt5, out5 = render(cluster5, texcoords, color_source, depth_intrinsics, out5)
@@ -408,8 +418,8 @@ def point_cloud():
             # row2 = np.hstack((out6, out7, out8, out9, out10))
             # combined_img = np.vstack((row1, row2))
             # cv2.imshow("result", combined_img)
-            cv2.imshow("out1", out1)
-            cv2.imshow("out2", out2)
+            # cv2.imshow("out1", out1)
+            # cv2.imshow("out2", out2)
 
             key = cv2.waitKey(1)
             # key = cv2.waitKey(1)
