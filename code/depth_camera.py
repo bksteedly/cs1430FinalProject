@@ -1,8 +1,9 @@
 from tqdm import tqdm
 from pointnet_segmentation import Data, DataLoader, classify
 from learning3d.models import PointNet, Segmentation, Classifier
-from kmeans import cluster
+from kmeans import cluster, dbscan_cluster
 import torch
+
 def point_cloud():
     # License: Apache 2.0. See LICENSE file in root directory.
     # Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
@@ -351,32 +352,58 @@ def point_cloud():
             # Pointcloud data to arrays
             v, t = points.get_vertices(), points.get_texture_coordinates()
             verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
-            cluster1, cluster2, cluster3, cluster4, cluster5, cluster6, cluster7, cluster8, cluster9, cluster10 = cluster(verts)
+            texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)
+            # cluster1, cluster2, cluster3, cluster4, cluster5, cluster6, cluster7, cluster8, cluster9, cluster10 = cluster(verts)
+            cluster_labels = dbscan_cluster(verts)
+            print('finished clustering')
+
+            clusters = [[] for i in range(np.unique(cluster_labels).shape[0])]
+            for i in range(len(verts)):
+                pt = verts[i]
+                label = cluster_labels[i]
+                clusters[label].append(pt)
+            print('grouped verts')
+            
+            outs = []
+            for c in clusters:
+                o = np.empty((h, w, 3), dtype=np.uint8)
+                c = np.array(c)
+                dt, o = render(c, texcoords, color_source, depth_intrinsics, o)
+                outs.append(o)
+
+            print('len of outs:', len(outs))
+            print('num points in cluster1:', len(clusters[0]))
+            print('num points in cluster2:', len(clusters[1]))
+            cv2.imshow("out0", outs[0])
+            cv2.imshow("out1", outs[1])
+            # combined_img = np.vstack((outs[0], outs[1]))
+
+
             # print(classify(verts))
             # print(classify(cluster2))
-            texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
+              # uv
             # return verts, texcoords
 
-            # Render
-            dt1, out1 = render(cluster1, texcoords, color_source, depth_intrinsics, out1)
-            dt2, out2 = render(cluster2, texcoords, color_source, depth_intrinsics, out2)
-            dt3, out3 = render(cluster3, texcoords, color_source, depth_intrinsics, out3)
-            dt4, out4 = render(cluster4, texcoords, color_source, depth_intrinsics, out4)
-            dt5, out5 = render(cluster5, texcoords, color_source, depth_intrinsics, out5)
-            dt6, out6 = render(cluster6, texcoords, color_source, depth_intrinsics, out6)
-            dt7, out7 = render(cluster7, texcoords, color_source, depth_intrinsics, out7)
-            dt8, out8 = render(cluster8, texcoords, color_source, depth_intrinsics, out8)
-            dt9, out9 = render(cluster9, texcoords, color_source, depth_intrinsics, out9)
-            dt10, out10 = render(cluster10, texcoords, color_source, depth_intrinsics, out10)
+            # # Render
+            # dt1, out1 = render(cluster1, texcoords, color_source, depth_intrinsics, out1)
+            # dt2, out2 = render(cluster2, texcoords, color_source, depth_intrinsics, out2)
+            # dt3, out3 = render(cluster3, texcoords, color_source, depth_intrinsics, out3)
+            # dt4, out4 = render(cluster4, texcoords, color_source, depth_intrinsics, out4)
+            # dt5, out5 = render(cluster5, texcoords, color_source, depth_intrinsics, out5)
+            # dt6, out6 = render(cluster6, texcoords, color_source, depth_intrinsics, out6)
+            # dt7, out7 = render(cluster7, texcoords, color_source, depth_intrinsics, out7)
+            # dt8, out8 = render(cluster8, texcoords, color_source, depth_intrinsics, out8)
+            # dt9, out9 = render(cluster9, texcoords, color_source, depth_intrinsics, out9)
+            # dt10, out10 = render(cluster10, texcoords, color_source, depth_intrinsics, out10)
 
-            # cv2.setWindowTitle(
-                # state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
-                # (w, h, 1.0/dt, dt*1000, "PAUSED" if state.paused else ""))
+            # # cv2.setWindowTitle(
+            #     # state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
+            #     # (w, h, 1.0/dt, dt*1000, "PAUSED" if state.paused else ""))
             
-            row1 = np.hstack((out1, out2, out3, out4, out5))
-            row2 = np.hstack((out6, out7, out8, out9, out10))
-            combined_img = np.vstack((row1, row2))
-            cv2.imshow("result", combined_img)
+            # row1 = np.hstack((out1, out2, out3, out4, out5))
+            # row2 = np.hstack((out6, out7, out8, out9, out10))
+            # combined_img = np.vstack((row1, row2))
+            # cv2.imshow("result", combined_img)
             # cv2.imshow("out5", out5)
 
             key = cv2.waitKey(1)

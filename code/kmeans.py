@@ -1,12 +1,14 @@
 from sklearn.cluster import KMeans, DBSCAN
 from pointnet_segmentation import classify
 import numpy as np
-import open3d as o3d
+# import open3d as o3d
 
 def dbscan_cluster(verts):
+    print('starting clustering')
     cluster_labels = DBSCAN(eps=0.5, min_samples=5,metric='euclidean').fit_predict(verts)
-    print(cluster_labels.shape)
-    print(np.unique(cluster_labels))
+    # print(cluster_labels.shape)
+    # print(np.unique(cluster_labels))
+    return cluster_labels
 
 def cluster(verts):
     kmeans = KMeans(n_clusters=10, random_state=0, n_init="auto")
@@ -97,7 +99,25 @@ def main():
     # np.save("cluster1.npy", cluster1)
     # np.save("cluster2.npy", cluster2)
 
-    dbscan_cluster(np.load("verts_v2.npy"))
+    # dbscan_cluster(np.load("verts_v2.npy"))
+
+    from pointnet_segmentation import classify
+
+    verts = np.load("verts_v2.npy")
+    cluster_labels = dbscan_cluster(verts)
+    print(np.unique(cluster_labels), cluster_labels)
+
+    clusters = [[] for i in range(np.unique(cluster_labels).shape[0])]
+    print(clusters)
+    for i in range(len(verts)):
+        pt = verts[i]
+        label = cluster_labels[i]
+        clusters[label].append(pt)
+    
+    print(len(clusters[0]), len(clusters[1]))
+
+    print(classify(clusters[0]))
+    print(classify(clusters[1]))
 
 
 
