@@ -103,16 +103,16 @@ def load_data(load_from_raw=False, load_train=True):
                 
                 np.save(f'../data/modelnet40/train/{c}.npy', np.array(np_file))
                 print('Saved training data')
-            return train_data
+            return encoding_metadata, train_data
         else:
             data_dir = '../data/modelnet40/train/'
             np_files = os.listdir(data_dir)
             train_data = []
-            for file in tqdm(np_files, desc='Loading model net 40 numpy files'):
+            for file in np_files:
                 pointcloud = np.load(data_dir+file)
                 label = file.split('.')[0]
                 train_data.append({'pointcloud': pointcloud, 'label': np.array(encoding_metadata[label])})
-            return train_data
+            return encoding_metadata, train_data
     else:
         if load_from_raw:
             data_dir = '/Users/amulya/Desktop/modelnet40-princeton-3d-object-dataset/ModelNet40'
@@ -129,7 +129,7 @@ def load_data(load_from_raw=False, load_train=True):
                 
                 np.save(f'../data/modelnet40/test/{c}.npy', np.array(np_file))
                 print('Saved testing data')
-            return test_data
+            return encoding_metadata, test_data
         else:
             data_dir = '../data/modelnet40/test/'
             np_files = os.listdir(data_dir)
@@ -138,7 +138,7 @@ def load_data(load_from_raw=False, load_train=True):
                 pointcloud = np.load(data_dir+file)
                 label = file.split('.')[0]
                 test_data.append({'pointcloud': pointcloud, 'label': np.array(encoding_metadata[label])})
-            return test_data
+            return encoding_metadata, test_data
     
         
 
@@ -168,7 +168,7 @@ def train():
     pnet = PointNet(global_feat=True)
     model = Classifier(feature_model=pnet)
 
-    train_data = load_data()
+    _, train_data = load_data()
     trainset = Data(train_data)
     trainloader = DataLoader(trainset, batch_size=32, shuffle=True, drop_last=True)
 
@@ -204,7 +204,7 @@ def test():
     model.load_state_dict(torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu')))
     model.eval()
 
-    test_data = load_data(load_train=False)
+    _, test_data = load_data(load_train=False)
     testset = Data(test_data)
     testloader = DataLoader(testset, batch_size=32, shuffle=True, drop_last=True)
 
@@ -221,6 +221,27 @@ def test():
         total += len(points)
 
     print('Accuracy:', round(accuracy/total, 4))
+
+def classify(verts):
+    pnet = PointNet(global_feat=True)
+    model = Classifier(feature_model=pnet)
+    model.load_state_dict(torch.load('pointnet_segmentation_model_65.pth', map_location=torch.device('cpu')))
+    model.eval()
+
+    data = [{'pointcloud': np.array([verts]), 'label': [np.zeros((1,40))]}]
+    testloader = DataLoader(Data(data), batch_size=1, shuffle=True, drop_last=True)
+
+    for i in range(1):
+        for j, data in enumerate(testloader):
+            points, target = data
+            # print(points.shape)
+            target = target.squeeze(-1)
+            output = model(points.float())
+            target_indices = target.argmax(dim=1)
+            d, _ = load_data()
+            # print(list(d.keys())[output.argmax(dim=1)])
+            # print(f'target: {target_indices} and output: {list(d.keys())[output.argmax(dim=1)]}')
+            return list(d.keys())[output.argmax(dim=1)]
 
 
 if __name__ == "__main__":
