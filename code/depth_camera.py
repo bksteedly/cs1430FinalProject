@@ -1,6 +1,7 @@
 from tqdm import tqdm
-from pointnet_segmentation import Data, DataLoader
+from pointnet_segmentation import Data, DataLoader, classify
 from learning3d.models import PointNet, Segmentation, Classifier
+from kmeans import cluster
 import torch
 def point_cloud():
     # License: Apache 2.0. See LICENSE file in root directory.
@@ -156,7 +157,7 @@ def point_cloud():
     cv2.setMouseCallback(state.WIN_NAME, mouse_cb)
 
 
-    def project(v):
+    def project(v, out):
         """project 3d vector array to 2d"""
         h, w = out.shape[:2]
         view_aspect = float(h)/w
@@ -179,8 +180,8 @@ def point_cloud():
 
     def line3d(out, pt1, pt2, color=(0x80, 0x80, 0x80), thickness=1):
         """draw a 3d line from pt1 to pt2"""
-        p0 = project(pt1.reshape(-1, 3))[0]
-        p1 = project(pt2.reshape(-1, 3))[0]
+        p0 = project(pt1.reshape(-1, 3), out)[0]
+        p1 = project(pt2.reshape(-1, 3), out)[0]
         if np.isnan(p0).any() or np.isnan(p1).any():
             return
         p0 = tuple(p0.astype(int))
@@ -237,6 +238,28 @@ def point_cloud():
             line3d(out, view(bottom_right), view(bottom_left), color)
             line3d(out, view(bottom_left), view(top_left), color)
 
+    def render(verts, texcoords, color_source, depth_intrinsics, out): 
+        now = time.time()
+        out.fill(0)
+
+        grid(out, (0, 0.5, 1), size=1, n=10)
+        frustum(out, depth_intrinsics)
+        axes(out, view([0, 0, 0]), state.rotation, size=0.1, thickness=1)
+
+        if not state.scale or out.shape[:2] == (h, w):
+            pointcloud(out, verts, texcoords, color_source)
+        else:
+            tmp = np.zeros((h, w, 3), dtype=np.uint8)
+            pointcloud(tmp, verts, texcoords, color_source)
+            tmp = cv2.resize(
+                tmp, out.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
+            np.putmask(out, tmp > 0, tmp)
+
+        if any(state.mouse_btns):
+            axes(out, view(state.pivot), state.rotation, thickness=4)
+
+        dt = time.time() - now
+        return dt, out
 
     def pointcloud(out, verts, texcoords, color, painter=True):
         """draw point cloud with optional painter's algorithm"""
@@ -247,9 +270,9 @@ def point_cloud():
             # https://gist.github.com/stevenvo/e3dad127598842459b68
             v = view(verts)
             s = v[:, 2].argsort()[::-1]
-            proj = project(v[s])
+            proj = project(v[s], out)
         else:
-            proj = project(view(verts))
+            proj = project(view(verts), out)
 
         if state.scale:
             proj *= 0.5**state.decimate
@@ -266,10 +289,12 @@ def point_cloud():
         m = im & jm
 
         cw, ch = color.shape[:2][::-1]
+        texcoords = np.clip(texcoords, 0, np.inf)
         if painter:
             # sort texcoord with same indices as above
             # texcoords are [0..1] and relative to top-left pixel corner,
             # multiply by size and add 0.5 to center
+            # v, u = (texcoords[s] * (cw, ch) + 0.5).astype(np.uint64).T
             v, u = (texcoords[s] * (cw, ch) + 0.5).astype(np.uint32).T
         else:
             v, u = (texcoords * (cw, ch) + 0.5).astype(np.uint32).T
@@ -280,13 +305,20 @@ def point_cloud():
         # perform uv-mapping
         out[i[m], j[m]] = color[u[m], v[m]]
 
-
-    out = np.empty((h, w, 3), dtype=np.uint8)
-
+    out1 = np.empty((h, w, 3), dtype=np.uint8)
+    out2 = np.empty((h, w, 3), dtype=np.uint8)
+    out3 = np.empty((h, w, 3), dtype=np.uint8)
+    out4 = np.empty((h, w, 3), dtype=np.uint8)
+    out5 = np.empty((h, w, 3), dtype=np.uint8)
+    out6 = np.empty((h, w, 3), dtype=np.uint8)
+    out7 = np.empty((h, w, 3), dtype=np.uint8)
+    out8 = np.empty((h, w, 3), dtype=np.uint8)
+    out9 = np.empty((h, w, 3), dtype=np.uint8)
+    out10 = np.empty((h, w, 3), dtype=np.uint8)
     try:
         while True:
-            print('inside while loop')
-            print(f'state: {state.paused}')
+            # print('inside while loop')
+            # print(f'state: {state.paused}')
             # Grab camera data
             if not state.paused:
                 # Wait for a coherent pair of frames: depth and color
@@ -319,41 +351,39 @@ def point_cloud():
             # Pointcloud data to arrays
             v, t = points.get_vertices(), points.get_texture_coordinates()
             verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+            cluster1, cluster2, cluster3, cluster4, cluster5, cluster6, cluster7, cluster8, cluster9, cluster10 = cluster(verts)
+            # print(classify(verts))
+            # print(classify(cluster2))
             texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
-            return verts, texcoords
+            # return verts, texcoords
 
             # Render
-            now = time.time()
+            dt1, out1 = render(cluster1, texcoords, color_source, depth_intrinsics, out1)
+            dt2, out2 = render(cluster2, texcoords, color_source, depth_intrinsics, out2)
+            dt3, out3 = render(cluster3, texcoords, color_source, depth_intrinsics, out3)
+            dt4, out4 = render(cluster4, texcoords, color_source, depth_intrinsics, out4)
+            dt5, out5 = render(cluster5, texcoords, color_source, depth_intrinsics, out5)
+            dt6, out6 = render(cluster6, texcoords, color_source, depth_intrinsics, out6)
+            dt7, out7 = render(cluster7, texcoords, color_source, depth_intrinsics, out7)
+            dt8, out8 = render(cluster8, texcoords, color_source, depth_intrinsics, out8)
+            dt9, out9 = render(cluster9, texcoords, color_source, depth_intrinsics, out9)
+            dt10, out10 = render(cluster10, texcoords, color_source, depth_intrinsics, out10)
 
-            out.fill(0)
+            # cv2.setWindowTitle(
+                # state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
+                # (w, h, 1.0/dt, dt*1000, "PAUSED" if state.paused else ""))
+            
+            row1 = np.hstack((out1, out2, out3, out4, out5))
+            row2 = np.hstack((out6, out7, out8, out9, out10))
+            combined_img = np.vstack((row1, row2))
+            cv2.imshow("result", combined_img)
+            # cv2.imshow("out5", out5)
 
-            grid(out, (0, 0.5, 1), size=1, n=10)
-            frustum(out, depth_intrinsics)
-            axes(out, view([0, 0, 0]), state.rotation, size=0.1, thickness=1)
+            key = cv2.waitKey(1)
+            # key = cv2.waitKey(1)
 
-            if not state.scale or out.shape[:2] == (h, w):
-                pointcloud(out, verts, texcoords, color_source)
-            else:
-                tmp = np.zeros((h, w, 3), dtype=np.uint8)
-                pointcloud(tmp, verts, texcoords, color_source)
-                tmp = cv2.resize(
-                    tmp, out.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
-                np.putmask(out, tmp > 0, tmp)
-
-            if any(state.mouse_btns):
-                axes(out, view(state.pivot), state.rotation, thickness=4)
-
-            dt = time.time() - now
-
-            cv2.setWindowTitle(
-                state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
-                (w, h, 1.0/dt, dt*1000, "PAUSED" if state.paused else ""))
-
-        cv2.imshow(state.WIN_NAME, out)
-        key = cv2.waitKey(1)
-        key = cv2.waitKey(1)
-
-            cv2.imwrite('./out.png', out)
+            # cv2.imwrite('./out.png', out)
+            time.sleep(5)
     finally:
         # Stop streaming
         pipeline.stop()
@@ -809,7 +839,7 @@ def segment_classifier(verts, texcoords, camera_info):
         proj[v[:, 2] < znear] = np.nan
         return proj
     proj = project(verts)
-    print(proj.shape)
+    # print(proj.shape)
 
     painter = True
     # proj now contains 2d image coordinates
@@ -852,24 +882,25 @@ def segment_classifier(verts, texcoords, camera_info):
     
 
 
-from torch.utils.data import Dataset
+# from torch.utils.data import Dataset
 
-class SegmentationData(Dataset):
-    def __init__(self, data):
-        self.data = data
+# class SegmentationData(Dataset):
+#     def __init__(self, data):
+#         self.data = data
         
-    def __len__(self):
-        return len(self.data)
+#     def __len__(self):
+#         return len(self.data)
     
-    def __getitem__(self, index):
-        return self.data[index]
+#     def __getitem__(self, index):
+#         return self.data[index]
 
-def classify(verts):
-    pnet = PointNet(global_feat=True)
-    model = Classifier(feature_model=pnet)
-    checkpoint = torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu'))  
-    model.load_state_dict(checkpoint)  
-    model.eval()
+# def classify(verts):
+#     pnet = PointNet(global_feat=True)
+#     model = Classifier(feature_model=pnet)
+#     checkpoint = torch.load('pointnet_segmentation_model.pth', map_location=torch.device('cpu'))  
+#     model.load_state_dict(checkpoint)  
+#     model.eval()
 
 if __name__ == '__main__':
-    stream()
+    # stream()
+    point_cloud()
