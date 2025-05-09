@@ -2,6 +2,8 @@ from tqdm import tqdm
 from pointnet_segmentation import Data, DataLoader
 from learning3d.models import PointNet, Segmentation, Classifier
 import torch
+from kmeans import dbscan_cluster, hdbscan_cluster, kmeans_cluster
+
 def point_cloud():
     # License: Apache 2.0. See LICENSE file in root directory.
     # Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
@@ -318,9 +320,15 @@ def point_cloud():
 
             # Pointcloud data to arrays
             v, t = points.get_vertices(), points.get_texture_coordinates()
-            verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
-            texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
-            return verts, texcoords
+            # verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+            # texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
+            verts_uncleaned = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+            texcoords_uncleaned = np.asanyarray(t).view(np.float32).reshape(-1, 2)
+            zero_indices = np.all(verts_uncleaned != 0.0, axis=1)
+            indeces = np.where(zero_indices)[0]
+            verts = verts_uncleaned[indeces]
+            texcoords = texcoords_uncleaned[indeces]
+            # return verts, texcoords
 
             # Render
             now = time.time()
@@ -349,11 +357,11 @@ def point_cloud():
                 state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
                 (w, h, 1.0/dt, dt*1000, "PAUSED" if state.paused else ""))
 
-        cv2.imshow(state.WIN_NAME, out)
-        key = cv2.waitKey(1)
-        key = cv2.waitKey(1)
+            cv2.imshow(state.WIN_NAME, out)
+            key = cv2.waitKey(1)
+            key = cv2.waitKey(1)
 
-            cv2.imwrite('./out.png', out)
+            # cv2.imwrite('./out.png', out)
     finally:
         # Stop streaming
         pipeline.stop()
@@ -872,4 +880,4 @@ def classify(verts):
     model.eval()
 
 if __name__ == '__main__':
-    stream()
+    point_cloud()
