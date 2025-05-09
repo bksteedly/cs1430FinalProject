@@ -238,6 +238,31 @@ def point_cloud():
             line3d(out, view(top_right), view(bottom_right), color)
             line3d(out, view(bottom_right), view(bottom_left), color)
             line3d(out, view(bottom_left), view(top_left), color)
+    
+    def render(out, verts, texcoords, color_source, depth_intrinsics):
+        # Render
+        now = time.time()
+
+        out.fill(0)
+
+        grid(out, (0, 0.5, 1), size=1, n=10)
+        frustum(out, depth_intrinsics)
+        axes(out, view([0, 0, 0]), state.rotation, size=0.1, thickness=1)
+
+        if not state.scale or out.shape[:2] == (h, w):
+            pointcloud(out, verts, texcoords, color_source)
+        else:
+            tmp = np.zeros((h, w, 3), dtype=np.uint8)
+            pointcloud(tmp, verts, texcoords, color_source)
+            tmp = cv2.resize(
+                tmp, out.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
+            np.putmask(out, tmp > 0, tmp)
+
+        if any(state.mouse_btns):
+            axes(out, view(state.pivot), state.rotation, thickness=4)
+
+        dt = time.time() - now
+        return dt, out
 
 
     def pointcloud(out, verts, texcoords, color, painter=True):
@@ -287,8 +312,8 @@ def point_cloud():
 
     try:
         while True:
-            print('inside while loop')
-            print(f'state: {state.paused}')
+            # print('inside while loop')
+            # print(f'state: {state.paused}')
             # Grab camera data
             if not state.paused:
                 # Wait for a coherent pair of frames: depth and color
@@ -322,36 +347,26 @@ def point_cloud():
             v, t = points.get_vertices(), points.get_texture_coordinates()
             # verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
             # texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
-            verts_uncleaned = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
-            texcoords_uncleaned = np.asanyarray(t).view(np.float32).reshape(-1, 2)
-            zero_indices = np.all(verts_uncleaned != 0.0, axis=1)
-            indeces = np.where(zero_indices)[0]
-            verts = verts_uncleaned[indeces]
-            texcoords = texcoords_uncleaned[indeces]
+            verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+            texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)
+            # zero_indices = np.all(verts_uncleaned != 0.0, axis=1)
+            # indeces = np.where(zero_indices)[0]
+            # verts = verts_uncleaned[indeces]
+            # texcoords = texcoords_uncleaned[indeces]
             # return verts, texcoords
+            
 
-            # Render
-            now = time.time()
+            clusters, sub_texcoords = kmeans_cluster(verts, texcoords)
+            print("type of verts: " + str(type(verts)))
+            print("type of clusters: " + str(type(np.array(clusters[0]))))
+            print("shape of verts: " + str(verts.shape))
+            print("shape of clusters: " + str(np.array(clusters[0]).shape))
+            print("shape of texcoords: " + str(texcoords.shape))
+            print("shape of sub_texcoords: " + str(np.array(sub_texcoords[0]).shape))
+            print("shape of color_source: " + str(color_source.shape))
 
-            out.fill(0)
 
-            grid(out, (0, 0.5, 1), size=1, n=10)
-            frustum(out, depth_intrinsics)
-            axes(out, view([0, 0, 0]), state.rotation, size=0.1, thickness=1)
-
-            if not state.scale or out.shape[:2] == (h, w):
-                pointcloud(out, verts, texcoords, color_source)
-            else:
-                tmp = np.zeros((h, w, 3), dtype=np.uint8)
-                pointcloud(tmp, verts, texcoords, color_source)
-                tmp = cv2.resize(
-                    tmp, out.shape[:2][::-1], interpolation=cv2.INTER_NEAREST)
-                np.putmask(out, tmp > 0, tmp)
-
-            if any(state.mouse_btns):
-                axes(out, view(state.pivot), state.rotation, thickness=4)
-
-            dt = time.time() - now
+            dt, out = render(out, np.array(clusters[0]), np.array(sub_texcoords[0]), color_source, depth_intrinsics)
 
             cv2.setWindowTitle(
                 state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
