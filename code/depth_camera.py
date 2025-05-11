@@ -3,6 +3,9 @@ from pointnet_segmentation import Data, DataLoader, classify
 from learning3d.models import PointNet, Segmentation, Classifier
 import torch
 from kmeans import dbscan_cluster, hdbscan_cluster, kmeans_cluster
+from mpl_toolkits.mplot3d.axes3d import *
+import matplotlib.pyplot as plt
+from sklearn import linear_model
 
 def point_cloud():
     # License: Apache 2.0. See LICENSE file in root directory.
@@ -238,12 +241,100 @@ def point_cloud():
             line3d(out, view(top_right), view(bottom_right), color)
             line3d(out, view(bottom_right), view(bottom_left), color)
             line3d(out, view(bottom_left), view(top_left), color)
+    def pointcloud_with_lines(bounding_box_lines, out):
+        import math
+        # draw boxes around point clouds
+        for line in bounding_box_lines:
+            start_point, end_point = line
+            start = np.array([view(start_point)])
+            start = project(start)
+            if math.isnan(start[0][0]) or math.isnan(start[0][1]):
+                return
+            start_2d = tuple([int(start[0][0]), int(start[0][1])])
+            end = np.array([view(end_point)])
+            end = project(end)
+            if math.isnan(end[0][0]) or math.isnan(end[0][1]):
+                return
+            end_2d = tuple([int(end[0][0]), int(end[0][1])])
+            cv2.line(out, start_2d, end_2d, (255, 0, 0), 2)
     
-    def render(out, verts, texcoords, color_source, depth_intrinsics):
+    def segment_ground(verts, texcoords):
+        # fig = plt.figure("Pointcloud")
+        # ax = Axes3D(fig)
+        # ax.grid = True
+
+        # ax.set_xlabel("X")
+        # ax.set_ylabel("Y")
+        # ax.set_zlabel("Z")
+        if verts.size > 10:
+            XY = verts[:, :2]
+            Z = verts[:, 2]
+            ransac = linear_model.RANSACRegressor(residual_threshold=0.32)
+            ransac.fit(XY, Z)
+            inlier_mask = ransac.inlier_mask_
+
+            inliers_verts = verts[inlier_mask]
+            inliers_tex = texcoords[inlier_mask]
+
+            outliers_verts = verts[~inlier_mask]
+            outliers_tex = texcoords[~inlier_mask]
+
+            return outliers_verts, outliers_tex
+
+            # min_x = np.amin(inliers[:, 0])
+            # max_x = np.amax(inliers[:, 0])
+            # min_y = np.amin(inliers[:, 1])
+            # max_y = np.amax(inliers[:, 1])
+
+            # x = np.linspace(min_x, max_x)
+            # y = np.linspace(min_y, max_y)
+
+            # X, Y = np.meshgrid(x, y)
+            # Z = a * X + b * Y + d
+            # AA = ax.plot_surface(X, Y, Z, cmap='binary', rstride=1, cstride=1, 
+            # alpha=1.0)
+            # BB = ax.scatter(outliers[:, 0], outliers[:, 1], outliers[:, 2],c='k', s 
+            # =1)
+            # CC = ax.scatter(inliers[:, 0], inliers[:, 1], inliers[:, 2], c='green', 
+            # s=1)
+            # plt.show()
+
+
+
+    def render(out, verts, texcoords, clusters, sub_texcoords, color_source, depth_intrinsics):
+        # get bounding boxes
+        lines = []
+        # cluster = np.array(clusters[0])
+        # min_x = np.min(cluster[:, 0])
+        # max_x = np.max(cluster[:, 0])
+        # min_y = np.min(cluster[:, 1])
+        # max_y = np.max(cluster[:, 1])
+        # min_z = np.min(cluster[:, 2])
+        # max_z = np.max(cluster[:, 2])
+
+        # lines.append(([min_x, min_y, min_z], [max_x, min_y, min_z]))
+        # lines.append(([max_x, min_y, min_z], [max_x, min_y, max_z]))
+        # lines.append(([min_x, min_y, max_z], [max_x, min_y, max_z]))
+        # lines.append(([min_x, min_y, min_z], [min_x, min_y, max_z]))
+
+        # lines.append(([min_x, max_y, min_z], [max_x, max_y, min_z]))
+        # lines.append(([max_x, max_y, min_z], [max_x, max_y, max_z]))
+        # lines.append(([min_x, max_y, max_z], [max_x, max_y, max_z]))
+        # lines.append(([min_x, max_y, min_z], [min_x, max_y, max_z]))
+
+        # lines.append(([min_x, min_y, max_z], [min_x, max_y, max_z]))
+        # lines.append(([max_x, min_y, max_z], [max_x, max_y, max_z]))
+        # lines.append(([max_x, min_y, min_z], [max_x, max_y, min_z]))
+        # lines.append(([min_x, min_y, min_z], [min_x, max_y, min_z]))
+
+            
+
         # Render
         now = time.time()
 
         out.fill(0)
+        verts, texcoords = segment_ground(verts, texcoords)
+        # pointcloud_with_lines(lines, out)
 
         grid(out, (0, 0.5, 1), size=1, n=10)
         frustum(out, depth_intrinsics)
@@ -345,9 +436,9 @@ def point_cloud():
 
             # Pointcloud data to arrays
             v, t = points.get_vertices(), points.get_texture_coordinates()
-            # verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+            # verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # verts
             # texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
-            verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # xyz
+            verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # verts
             texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)
             # zero_indices = np.all(verts_uncleaned != 0.0, axis=1)
             # indeces = np.where(zero_indices)[0]
@@ -366,8 +457,13 @@ def point_cloud():
             # print("shape of color_source: " + str(color_source.shape))
 
 
-            dt, out = render(out, np.array(clusters[0]), np.array(sub_texcoords[0]), color_source, depth_intrinsics)
-            print(classify(np.array(clusters[0])))
+            # dt, out = render(out, np.array(clusters[0]), np.array(sub_texcoords[0]), color_source, depth_intrinsics)
+            dt, out = render(out, verts, texcoords, clusters, sub_texcoords, color_source, depth_intrinsics)
+            # dt, out = render(out, np.array(clusters[0]), np.array(sub_texcoords[0]), clusters, sub_texcoords, color_source, depth_intrinsics)
+            # for i in range(len(clusters)):
+            #     print(classify(np.array(clusters[i])))
+            # print(classify(np.array(clusters[0])))
+            
 
             cv2.setWindowTitle(
                 state.WIN_NAME, "RealSense (%dx%d) %dFPS (%.2fms) %s" %
@@ -375,9 +471,9 @@ def point_cloud():
 
             cv2.imshow(state.WIN_NAME, out)
             key = cv2.waitKey(1)
-            key = cv2.waitKey(1)
 
             # cv2.imwrite('./out.png', out)
+            time.sleep(2)
     finally:
         # Stop streaming
         pipeline.stop()
