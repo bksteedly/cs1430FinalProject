@@ -6,6 +6,7 @@ from kmeans import dbscan_cluster, hdbscan_cluster, kmeans_cluster
 from mpl_toolkits.mplot3d.axes3d import *
 import matplotlib.pyplot as plt
 from sklearn import linear_model
+import open3d as o3d
 
 def point_cloud():
     # License: Apache 2.0. See LICENSE file in root directory.
@@ -266,38 +267,64 @@ def point_cloud():
         # ax.set_xlabel("X")
         # ax.set_ylabel("Y")
         # ax.set_zlabel("Z")
-        if verts.size > 10:
-            XY = verts[:, :2]
-            Z = verts[:, 2]
-            ransac = linear_model.RANSACRegressor(residual_threshold=0.32)
-            ransac.fit(XY, Z)
-            inlier_mask = ransac.inlier_mask_
+        # if verts.size > 10:
+        #     XY = verts[:, :2]
+        #     Z = verts[:, 2]
+        #     ransac = linear_model.RANSACRegressor(residual_threshold=0.3, max_trials=100)
+        #     ransac.fit(XY, Z)
+        #     inlier_mask = ransac.inlier_mask_
 
-            inliers_verts = verts[inlier_mask]
-            inliers_tex = texcoords[inlier_mask]
+        #     inliers_verts = verts[inlier_mask]
+        #     inliers_tex = texcoords[inlier_mask]
 
-            outliers_verts = verts[~inlier_mask]
-            outliers_tex = texcoords[~inlier_mask]
+        #     outliers_verts = verts[~inlier_mask]
+        #     outliers_tex = texcoords[~inlier_mask]
 
-            return outliers_verts, outliers_tex
+        #     return outliers_verts, outliers_tex
+        #     # return inliers_verts, inliers_tex
 
-            # min_x = np.amin(inliers[:, 0])
-            # max_x = np.amax(inliers[:, 0])
-            # min_y = np.amin(inliers[:, 1])
-            # max_y = np.amax(inliers[:, 1])
+        #     # min_x = np.amin(inliers[:, 0])
+        #     # max_x = np.amax(inliers[:, 0])
+        #     # min_y = np.amin(inliers[:, 1])
+        #     # max_y = np.amax(inliers[:, 1])
 
-            # x = np.linspace(min_x, max_x)
-            # y = np.linspace(min_y, max_y)
+        #     # x = np.linspace(min_x, max_x)
+        #     # y = np.linspace(min_y, max_y)
 
-            # X, Y = np.meshgrid(x, y)
-            # Z = a * X + b * Y + d
-            # AA = ax.plot_surface(X, Y, Z, cmap='binary', rstride=1, cstride=1, 
-            # alpha=1.0)
-            # BB = ax.scatter(outliers[:, 0], outliers[:, 1], outliers[:, 2],c='k', s 
-            # =1)
-            # CC = ax.scatter(inliers[:, 0], inliers[:, 1], inliers[:, 2], c='green', 
-            # s=1)
-            # plt.show()
+        #     # X, Y = np.meshgrid(x, y)
+        #     # Z = a * X + b * Y + d
+        #     # AA = ax.plot_surface(X, Y, Z, cmap='binary', rstride=1, cstride=1, 
+        #     # alpha=1.0)
+        #     # BB = ax.scatter(outliers[:, 0], outliers[:, 1], outliers[:, 2],c='k', s 
+        #     # =1)
+        #     # CC = ax.scatter(inliers[:, 0], inliers[:, 1], inliers[:, 2], c='green', 
+        #     # s=1)
+        #     # plt.show()
+
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(verts)
+
+        # Plane segmentation using RANSAC
+        plane_model, inliers = pcd.segment_plane(distance_threshold=0.1,
+                                             ransac_n=3,
+                                             num_iterations=1000)
+        
+        # inlier_cloud = pcd.select_by_index(inliers)
+        # inlier_cloud.paint_uniform_color([1.0, 0, 0])
+        # outlier_cloud = pcd.select_by_index(inliers, invert=True)
+        # o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud])
+    
+
+        # ground_cloud = pcd.select_by_index(inliers)
+        # non_ground_cloud = pcd.select_by_index(inliers, invert=True)
+
+        # # Convert back to NumPy
+        # return np.asarray(non_ground_cloud.points)
+        mask = np.ones(len(verts), dtype=bool)
+        mask[np.array(inliers)] = False
+
+        return verts[mask], texcoords[mask]
+
 
 
 
@@ -333,7 +360,12 @@ def point_cloud():
         now = time.time()
 
         out.fill(0)
-        verts, texcoords = segment_ground(verts, texcoords)
+        # not_ground_idx = np.argwhere(texcoords[:, 1] > 0)
+        # verts = verts[not_ground_idx].squeeze()
+        # texcoords = texcoords[not_ground_idx].squeeze()
+        # print(verts.shape, texcoords.shape)
+
+        # verts, texcoords = segment_ground(verts, texcoords)
         # pointcloud_with_lines(lines, out)
 
         grid(out, (0, 0.5, 1), size=1, n=10)
@@ -440,10 +472,13 @@ def point_cloud():
             # texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)  # uv
             verts = np.asanyarray(v).view(np.float32).reshape(-1, 3)  # verts
             texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)
+            
+            verts, texcoords = segment_ground(verts, texcoords)
+
             # zero_indices = np.all(verts_uncleaned != 0.0, axis=1)
             # indeces = np.where(zero_indices)[0]
             # verts = verts_uncleaned[indeces]
-            # texcoords = texcoords_uncleaned[indeces]
+            # texcoords = texcoord_uncleaned[indeces]
             # return verts, texcoords
             
 
@@ -457,8 +492,9 @@ def point_cloud():
             # print("shape of color_source: " + str(color_source.shape))
 
 
-            # dt, out = render(out, np.array(clusters[0]), np.array(sub_texcoords[0]), color_source, depth_intrinsics)
-            dt, out = render(out, verts, texcoords, clusters, sub_texcoords, color_source, depth_intrinsics)
+            dt, out = render(out, np.array(clusters[0]), np.array(sub_texcoords[0]), None, None, color_source, depth_intrinsics)
+            print(classify(clusters[0]))
+            # dt, out = render(out, verts, texcoords, clusters, sub_texcoords, color_source, depth_intrinsics)
             # dt, out = render(out, np.array(clusters[0]), np.array(sub_texcoords[0]), clusters, sub_texcoords, color_source, depth_intrinsics)
             # for i in range(len(clusters)):
             #     print(classify(np.array(clusters[i])))

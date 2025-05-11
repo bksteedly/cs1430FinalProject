@@ -225,7 +225,7 @@ def test():
 def classify(verts):
     pnet = PointNet(global_feat=True)
     model = Classifier(feature_model=pnet)
-    model.load_state_dict(torch.load('pointnet_segmentation_model_65.pth', map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load('pointnet_segmentation_model_66.pth', map_location=torch.device('cpu')))
     model.eval()
 
     data = [{'pointcloud': np.array([verts]), 'label': [np.zeros((1,40))]}]

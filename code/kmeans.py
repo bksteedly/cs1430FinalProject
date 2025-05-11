@@ -35,7 +35,7 @@ def hdbscan_cluster(verts):
     return clusters
 
 def kmeans_cluster(verts, texcoords):
-    cluster_labels = KMeans(n_clusters=10, random_state=0, n_init="auto").fit_predict(verts)
+    cluster_labels = KMeans(n_clusters=3, random_state=0, n_init="auto").fit_predict(verts)
 
     unique_labels = np.unique(cluster_labels)
     clusters = [[] for label in unique_labels]
