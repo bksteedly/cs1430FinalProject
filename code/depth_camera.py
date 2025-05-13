@@ -300,7 +300,7 @@ class PointCloud:
                 texcoords = np.asanyarray(t).view(np.float32).reshape(-1, 2)
 
                 # Voxel downsample point cloud
-                verts, texcoords = self.voxel_downsampling(verts, texcoords)
+                # verts, texcoords = self.voxel_downsampling(verts, texcoords)
                 
                 # Remove ground from pointcloud data
                 verts, texcoords = self.segment_ground(verts, texcoords)
