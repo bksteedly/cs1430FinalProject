@@ -8,7 +8,6 @@ num_markers_y = 3
 marker_length = 3.75
 marker_separation = 0.5
 
-# marker_ids = [[i for i in range(20)], [i for i in range(20,40)], [i for i in range(40, 60)], [i for i in range(60, 80)]]
 marker_ids = [0, 9, 18, 27]
 
 for i in range(4):
@@ -23,8 +22,6 @@ for i in range(4):
 
     img = np.zeros((580,725), np.uint8) #4x4
 
-    # help(cv.aruco_GridBoard.draw)
-    # draw(outSize[, img[, marginSize[, borderBits]]]) -> img
     img = board.draw( 
         img.shape,                  # Size of the output image in pixels.
         img,                        # Output image with the board
